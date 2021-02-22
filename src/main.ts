@@ -7,9 +7,6 @@ Vue.config.productionTip = false
 
 Vue.use(WaveUI);
 
-const waveui = new WaveUI({})
-
 new Vue({
-  waveui,
   render: h => h(App),
 }).$mount('#app')
