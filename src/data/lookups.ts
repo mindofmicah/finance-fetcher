@@ -9,7 +9,7 @@ const addLookup = function (label: string, slug: string, cb?: Function) {
 };
 
 addLookup('Revenue', 'revenue', (data) => {
-    return Object.values(data).map((a) => {
+    return Object.values(data).map((a: { field_name: string; popup_icon: string }) => {
         const {field_name: field, ...dates} = a;
 
         const span = document.createElement('span');
