@@ -4,9 +4,6 @@
         <w-form @submit="fetchInfo">
             <w-input label="Ticker" :validators="[validators.required]" v-model="ticker"/>
 
-            <w-select label="Property" v-model="lookup" :validators="[validators.required]" :items="lookup_options">
-
-            </w-select>
             <w-button type="Submit">Submit</w-button>
         </w-form>
 
