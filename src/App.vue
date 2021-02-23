@@ -8,16 +8,38 @@
             </v-form>
 
             <div v-show="fetchedData.length" style="margin-top:20px;">
-                <pre>
-                    {{ fetchedData }}
-                </pre>
+                <v-expansion-panels>
+
+                    <v-expansion-panel v-for="property in fetchedData" :key="property.label">
+                        <v-expansion-panel-header>{{ property.label }}</v-expansion-panel-header>
+                        <v-expansion-panel-content>
+
+                            <v-simple-table>
+                                <template v-slot:default>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(value,date) in property.dates" :key="date">
+                                            <td>{{ date }}</td>
+                                            <td>{{ value }}</td>
+                                        </tr>
+                                    </tbody>
+                                </template>
+                            </v-simple-table>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+
+                </v-expansion-panels>
             </div>
         </v-main>
     </v-app>
 </template>
 
 <script lang="ts">
-import {data as lookups} from './data/lookups'
 import {Component, Vue} from 'vue-property-decorator';
 
 @Component({
@@ -28,8 +50,6 @@ export default class App extends Vue {
     tickerRules = [
         v => !!v || 'Name is required'
     ];
-    lookup_options = [];
-    lookup_callbacks = {};
     fetchedData = [];
     validators = {
         required: value => !!value || 'This field is required'
@@ -41,18 +61,8 @@ export default class App extends Vue {
     }
 
     async fetchInfo() {
-        const resp = await fetch(`/.netlify/functions/hi?ticker=${this.ticker}`);
-        this.fetchedData = this.lookup_callbacks[this.lookup]((await resp.json()).data);
-    }
-
-    created() {
-        lookups.forEach((entry) => {
-            this.lookup_options.push({
-                value: entry.slug,
-                label: entry.label
-            });
-            this.lookup_callbacks[entry.slug] = entry.cb;
-        })
+        const resp = await fetch(`/.netlify/functions/ticker-lookup?ticker=${this.ticker}`);
+        this.fetchedData = (await resp.json()).data;
     }
 }
 </script>
