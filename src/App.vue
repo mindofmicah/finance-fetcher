@@ -1,20 +1,19 @@
 <template>
-    <w-app style="margin:0 auto; max-width:800px; background-color:whitesmoke; padding:20px;" class="pa4">
+    <v-app style="margin:0 auto; max-width:800px; background-color:whitesmoke; padding:20px;" class="pa4">
 
-        <w-form @submit="fetchInfo">
-            <w-input label="Ticker" :validators="[validators.required]" v-model="ticker"/>
+        <v-main>
+            <v-form @submit.prevent="fetchInfo">
+                <v-text-field v-model="ticker" label="Ticker" :rules="tickerRules" :counter="4" required/>
+                <v-btn type="submit" color="primary">Lookup</v-btn>
+            </v-form>
 
-            <w-button type="Submit">Submit</w-button>
-        </w-form>
-
-        <div v-show="fetchedData.length" style="margin-top:20px;">
-
-        <pre>
-
-        {{ fetchedData }}
-        </pre>
-        </div>
-    </w-app>
+            <div v-show="fetchedData.length" style="margin-top:20px;">
+                <pre>
+                    {{ fetchedData }}
+                </pre>
+            </div>
+        </v-main>
+    </v-app>
 </template>
 
 <script lang="ts">
@@ -25,10 +24,12 @@ import {Component, Vue} from 'vue-property-decorator';
     components: {},
 })
 export default class App extends Vue {
+    ticker: string;
+    tickerRules = [
+        v => !!v || 'Name is required'
+    ];
     lookup_options = [];
     lookup_callbacks = {};
-    lookup: string;
-    ticker: string;
     fetchedData = [];
     validators = {
         required: value => !!value || 'This field is required'
@@ -36,13 +37,11 @@ export default class App extends Vue {
 
     constructor() {
         super();
-        this.lookup = 'revenue';
         this.ticker = 'nflx';
     }
 
     async fetchInfo() {
-        console.clear();
-        const resp = await fetch(`/.netlify/functions/hi?ticker=${this.ticker}&property=${this.lookup}`);
+        const resp = await fetch(`/.netlify/functions/hi?ticker=${this.ticker}`);
         this.fetchedData = this.lookup_callbacks[this.lookup]((await resp.json()).data);
     }
 
