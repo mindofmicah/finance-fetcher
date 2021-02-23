@@ -21,16 +21,15 @@
 </template>
 
 <script lang="ts">
+import {data as lookups} from './data/lookups'
 import {Component, Vue} from 'vue-property-decorator';
 
 @Component({
     components: {},
 })
 export default class App extends Vue {
-    lookup_options = [
-        {value: 'revenue', label: 'Revenue'},
-        {value: 'total-provision-income-taxes', label: 'Total Provision Income Taxes'},
-    ];
+    lookup_options = [];
+    lookup_callbacks = {};
     lookup: string;
     ticker: string;
     fetchedData = [];
@@ -47,7 +46,17 @@ export default class App extends Vue {
     async fetchInfo() {
         console.clear();
         const resp = await fetch(`/.netlify/functions/hi?ticker=${this.ticker}&property=${this.lookup}`);
-        this.fetchedData = (await resp.json()).data;
+        this.fetchedData = this.lookup_callbacks[this.lookup]((await resp.json()).data);
+    }
+
+    created() {
+        lookups.forEach((entry) => {
+            this.lookup_options.push({
+                value: entry.slug,
+                label: entry.label
+            });
+            this.lookup_callbacks[entry.slug] = entry.cb;
+        })
     }
 }
 </script>
