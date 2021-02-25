@@ -228,7 +228,7 @@ export default class App extends Vue {
   }
 
   mounted() {
-    this.fetchInfo();
+    // this.fetchInfo();
   }
 }
 </script>
