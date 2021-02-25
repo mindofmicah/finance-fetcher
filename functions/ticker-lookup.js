@@ -5,7 +5,7 @@ const slugMe = string => {
     return slugify(string, {
         replacement: '_',
         lower: true,
-    })
+    }).replace(/-/g, '_')
 };
 const handler = async (event) => {
 
