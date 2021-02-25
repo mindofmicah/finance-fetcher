@@ -12,6 +12,7 @@
     "netlify-cli": "^3.8.5",
     "netlify-lambda": "^2.0.3",
     "node-fetch": "^2.6.1",
+    "slugify": "^1.4.7",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-property-decorator": "^9.1.2",
