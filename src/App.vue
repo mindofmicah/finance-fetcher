@@ -6,7 +6,7 @@
                 <v-btn type="submit" color="primary">Lookup</v-btn>
             </v-form>
 
-            <div v-if="financialStatements.length" style="margin-top:20px;">
+            <div v-if="financialStatements.items.length" style="margin-top:20px;">
                 <v-tabs v-model="tab" show-arrows>
                     <v-tab v-for="heading in tabHeadings" :key="heading">
                         {{ heading }}
@@ -15,19 +15,18 @@
                 <v-tabs-items v-model="tab">
                     <v-tab-item key="Dave Forms">
                         <v-expansion-panels v-model="panel_index">
-                            <v-expansion-panel>
-                                <v-expansion-panel-header>ROIC</v-expansion-panel-header>
+                            <v-expansion-panel v-for="(form, index) in forms" :key="index">
+                                <v-expansion-panel-header>{{ form.name }}</v-expansion-panel-header>
                                 <v-expansion-panel-content>
                                     <v-simple-table>
                                         <template v-slot:default>
                                             <thead>
                                             <tr>
-                                                <th>Property</th>
-                                                <th>Value</th>
+                                                <th v-for="heading in form.headings" :key="heading">{{ heading }}</th>
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            <tr v-for="(cells, i) in roicColumns" :key="i">
+                                            <tr v-for="(cells, i) in form.rows()" :key="i">
                                                 <td v-for="(cell, ii) in cells" :key="ii">{{ cell }}</td>
                                             </tr>
                                             </tbody>
@@ -37,7 +36,7 @@
                             </v-expansion-panel>
                         </v-expansion-panels>
                     </v-tab-item>
-                    <v-tab-item :key="statement.name" v-for="statement in financialStatements">
+                    <v-tab-item :key="statement.name" v-for="statement in financialStatements.items">
                         <v-expansion-panels>
                             <v-expansion-panel v-for="(property,index) in statement.items" :key="index">
                                 <v-expansion-panel-header>{{ property.name }}</v-expansion-panel-header>
@@ -155,60 +154,26 @@ class FinancialStatement {
     }
 }
 
-import {Component, Vue} from 'vue-property-decorator';
+class DaveForm {
+    headings = ['Property', 'Value'];
+    financials: FinancialStatementCollection;
 
-@Component({
-    components: {},
-})
-export default class App extends Vue {
-    tab = 0;// || 2;
-    panel_index = 0;
-    ticker: string;
-    tickerRules = [
-        v => !!v || 'Name is required'
-    ];
-    financialStatements: FinancialStatement[];
-
-    validators = {
-        required: value => !!value || 'This field is required'
+    constructor(financials: FinancialStatementCollection) {
+        this.financials = financials;
     }
 
-    constructor() {
-        super();
-        this.ticker = 'nflx';
-        this.financialStatements = [];
+    rows(): Array {
+        return [];
     }
+}
 
-    fetchInfo() {
-        fetch(`/.netlify/functions/ticker-lookup?ticker=${this.ticker}`)
-            .then(result => result.json())
-            .then(({data}) => {
-                this.financialStatements = data.financial_statements.map(x => {
-                    return new FinancialStatement(x.name, x.items)
-                });
-            });
-    }
+class ROICForm extends DaveForm {
+    name = 'ROIC';
 
-    get tabHeadings() {
-        return ['Dave Forms', ...this.financialStatements.map(s => s.name)];
-    }
+    rows(): Array {
 
-    statement(name): FinancialStatement {
-        for (const s of this.financialStatements) {
-            if (name === s.name) {
-                return s;
-            }
-        }
-        return null;
-    }
-
-    get roicColumns() {
-        if (this.financialStatements.length < 2) {
-            return [];
-        }
-
-        const incomeStatement = this.statement('Income Statement');
-        const balanceSheet = this.statement('Balance Sheet');
+        const incomeStatement = this.financials.statement('Income Statement');
+        const balanceSheet = this.financials.statement('Balance Sheet');
 
         const ebit = parseFloat(String(incomeStatement.item('EBIT').value));
         const taxes = parseFloat(String(incomeStatement.item('Income Taxes').value));
@@ -222,13 +187,83 @@ export default class App extends Vue {
             ['Equity', equity],
             ['Debt', debt],
             ['ROIC', roic],
+
         ]
     }
+}
 
-    mounted() {
-        // console.clear();
-        this.fetchInfo();
+class FinancialStatementCollection {
+    items: FinancialStatement[];
+
+    constructor(items: FinancialStatement[] = []) {
+        this.items = items;
     }
+
+    statement(name): FinancialStatement {
+        for (const s of this.items) {
+            if (name === s.name) {
+                return s;
+            }
+        }
+        return null;
+    }
+}
+
+import {Component, Vue} from 'vue-property-decorator';
+
+@Component({
+    components: {},
+})
+export default class App extends Vue {
+    tab = 0;// || 2;
+    panel_index = 0;
+    forms: DaveForm[];
+    ticker: string;
+    tickerRules = [
+        v => !!v || 'Name is required'
+    ];
+    financialStatements: FinancialStatementCollection;
+
+    validators = {
+        required: value => !!value || 'This field is required'
+    }
+
+    constructor() {
+        super();
+        this.ticker = 'nflx';
+        this.financialStatements = new FinancialStatementCollection;
+
+        this.forms = [];
+        this.forms.push(new ROICForm(this.financialStatements));
+    }
+
+    fetchInfo() {
+        fetch(`/.netlify/functions/ticker-lookup?ticker=${this.ticker}`)
+            .then(result => result.json())
+            .then(({data}) => {
+                this.financialStatements.items = (data.financial_statements.map(x => {
+                    return new FinancialStatement(x.name, x.items)
+                }));
+            });
+    }
+
+    get tabHeadings() {
+        return ['Dave Forms', ...this.financialStatements.items.map(s => s.name)];
+    }
+
+    statement(name): FinancialStatement {
+        for (const s of this.financialStatements) {
+            if (name === s.name) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    // mounted() {
+        // console.clear();
+        // this.fetchInfo();
+    // }
 }
 
 </script>
