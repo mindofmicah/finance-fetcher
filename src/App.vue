@@ -21,14 +21,17 @@
                                     <v-simple-table>
                                         <template v-slot:default>
                                             <thead>
-                                            <tr>
-                                                <th v-for="heading in form.headings" :key="heading">{{ heading }}</th>
-                                            </tr>
+                                                <tr>
+                                                    <th v-for="heading in form.headings" :key="heading">{{
+                                                            heading
+                                                        }}
+                                                    </th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            <tr v-for="(cells, i) in form.rows()" :key="i">
-                                                <td v-for="(cell, ii) in cells" :key="ii">{{ cell }}</td>
-                                            </tr>
+                                                <tr v-for="(cells, i) in form.rows()" :key="i">
+                                                    <td v-for="(cell, ii) in cells" :key="ii">{{ cell }}</td>
+                                                </tr>
                                             </tbody>
                                         </template>
                                     </v-simple-table>
@@ -44,16 +47,16 @@
                                     <v-simple-table>
                                         <template v-slot:default>
                                             <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Value</th>
-                                            </tr>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Value</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            <tr v-for="(value,index) in property.values" :key="index">
-                                                <td>{{ value.date }}</td>
-                                                <td>{{ value.value }}</td>
-                                            </tr>
+                                                <tr v-for="(value,index) in property.values" :key="index">
+                                                    <td>{{ value.date }}</td>
+                                                    <td>{{ value.value }}</td>
+                                                </tr>
                                             </tbody>
                                         </template>
                                     </v-simple-table>
@@ -155,16 +158,69 @@ class FinancialStatement {
 }
 
 class DaveForm {
-    headings = ['Property', 'Value'];
+    _headings = ['Property', 'Value'];
     financials: FinancialStatementCollection;
 
     constructor(financials: FinancialStatementCollection) {
         this.financials = financials;
     }
 
+    get headings() {
+        return this._headings;
+    }
+
     rows(): any[][] {
         return [];
     }
+}
+
+import {RATE} from '@formulajs/formulajs';
+
+class RateOfReturnForm extends DaveForm {
+    statement = '';
+    value = '';
+    heading = null;
+    extraYears = [1, 3, 5, 10]
+
+    get headings() {
+        return ['Time Period', this.heading ?? this.value, 'Rate of Return']
+    }
+
+    rows(): any[][] {
+
+        const statement1 = this.financials.statement(this.statement);
+        const recent = statement1.item(this.value).value;
+        const others = this.extraYears;
+        return [
+            ['Recent', recent, ''],
+            ...others.map((index) => {
+                const value = statement1.item(this.value, index).value
+                return [
+                    `${index} year(s) ago`,
+                    value,
+                    `${(100 * RATE(index, 0, -1 * value, recent)).toFixed(2)}%`
+                ]
+            })
+        ];
+    }
+
+}
+class EPSForm extends RateOfReturnForm{
+    name = 'EPS Growth Rate';
+    statement = 'Income Statement';
+    value = 'EPS - Earnings Per Share';
+    heading = 'EPS';
+}
+class EquityForm extends RateOfReturnForm {
+    name = 'Equity';
+    statement = 'Balance Sheet';
+    value = 'Share Holder Equity';
+    heading = 'Equity';
+}
+class RevenueForm extends RateOfReturnForm {
+    name = 'Revenue Growth Rate';
+    statement = 'Income Statement';
+    value = 'Revenue';
 }
 
 class ROICForm extends DaveForm {
@@ -235,6 +291,9 @@ export default class App extends Vue {
 
         this.forms = [];
         this.forms.push(new ROICForm(this.financialStatements));
+        this.forms.push(new RevenueForm(this.financialStatements));
+        this.forms.push(new EPSForm(this.financialStatements));
+        this.forms.push(new EquityForm(this.financialStatements));
     }
 
     fetchInfo() {

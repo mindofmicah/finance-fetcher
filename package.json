@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@formulajs/formulajs": "^2.6.3",
     "core-js": "^3.6.5",
     "netlify-cli": "^3.8.5",
     "netlify-lambda": "^2.0.3",
