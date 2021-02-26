@@ -1,23 +1,18 @@
 <template>
     <v-app style="margin:0 auto; max-width:800px; background-color:whitesmoke; padding:20px;" class="pa4">
-
         <v-main>
             <v-form @submit.prevent="fetchInfo">
                 <v-text-field v-model="ticker" label="Ticker" :rules="tickerRules" :counter="4" required/>
                 <v-btn type="submit" color="primary">Lookup</v-btn>
             </v-form>
 
-            <div v-if="fetchedData" style="margin-top:20px;">
-                <v-tabs v-model="tab">
-                    <v-tab
-                        v-for="heading in tabs"
-                        :key="heading"
-                    >
+            <div v-if="financialStatements.length" style="margin-top:20px;">
+                <v-tabs v-model="tab" show-arrows>
+                    <v-tab v-for="heading in tabHeadings" :key="heading">
                         {{ heading }}
                     </v-tab>
                 </v-tabs>
                 <v-tabs-items v-model="tab">
-
                     <v-tab-item key="Dave Forms">
                         <v-expansion-panels v-model="panel_index">
                             <v-expansion-panel>
@@ -40,14 +35,12 @@
                                     </v-simple-table>
                                 </v-expansion-panel-content>
                             </v-expansion-panel>
-
                         </v-expansion-panels>
-
                     </v-tab-item>
-                    <v-tab-item key="Balance Sheet">
+                    <v-tab-item :key="statement.name" v-for="statement in financialStatements">
                         <v-expansion-panels>
-                            <v-expansion-panel v-for="property in fetchedData.balance_sheet" :key="property.label">
-                                <v-expansion-panel-header>{{ property.label }}</v-expansion-panel-header>
+                            <v-expansion-panel v-for="(property,index) in statement.items" :key="index">
+                                <v-expansion-panel-header>{{ property.name }}</v-expansion-panel-header>
                                 <v-expansion-panel-content>
                                     <v-simple-table>
                                         <template v-slot:default>
@@ -67,39 +60,9 @@
                                     </v-simple-table>
                                 </v-expansion-panel-content>
                             </v-expansion-panel>
-
                         </v-expansion-panels>
-
-                    </v-tab-item>
-                    <v-tab-item key="Income Statement">
-                        <v-expansion-panels>
-                            <v-expansion-panel v-for="property in fetchedData.income_statement" :key="property.label">
-                                <v-expansion-panel-header>{{ property.label }}</v-expansion-panel-header>
-                                <v-expansion-panel-content>
-                                    <v-simple-table>
-                                        <template v-slot:default>
-                                            <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Value</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            <tr v-for="(value,index) in property.values" :key="index">
-                                                <td>{{ value.date }}</td>
-                                                <td>{{ value.value }}</td>
-                                            </tr>
-                                            </tbody>
-                                        </template>
-                                    </v-simple-table>
-                                </v-expansion-panel-content>
-                            </v-expansion-panel>
-
-                        </v-expansion-panels>
-
                     </v-tab-item>
                 </v-tabs-items>
-
             </div>
         </v-main>
     </v-app>
@@ -111,6 +74,7 @@ type FinancialValue = {
     date: string;
     value: number;
 };
+
 type FinancialProperty = {
     label: string;
     position: number;
@@ -167,10 +131,29 @@ type BalanceSheet = {
     total_liabilities_and_share_holders_equity: FinancialProperty;
 
 };
-type FinancialData = {
-    income_statement: IncomeStatement;
-    balance_sheet: BalanceSheet;
-};
+
+type FinancialStatementItem = {
+    name: string;
+    values: FinancialValue[];
+}
+
+class FinancialStatement {
+    items: FinancialStatementItem[];
+    name: string;
+
+    constructor(name, items) {
+        this.name = name;
+        this.items = items;
+    }
+
+    item(name: string, index = 0): FinancialValue {
+        for (const item of this.items) {
+            if (item.name === name) {
+                return item.values[index];
+            }
+        }
+    }
+}
 
 import {Component, Vue} from 'vue-property-decorator';
 
@@ -178,14 +161,14 @@ import {Component, Vue} from 'vue-property-decorator';
     components: {},
 })
 export default class App extends Vue {
-    tabs = ['Dave Forms', 'Balance Sheet', 'Income Statement'];
     tab = 0;// || 2;
     panel_index = 0;
     ticker: string;
     tickerRules = [
         v => !!v || 'Name is required'
     ];
-    fetchedData?: FinancialData;
+    financialStatements: FinancialStatement[];
+
     validators = {
         required: value => !!value || 'This field is required'
     }
@@ -193,29 +176,44 @@ export default class App extends Vue {
     constructor() {
         super();
         this.ticker = 'nflx';
-        this.fetchedData = null;
+        this.financialStatements = [];
     }
 
     fetchInfo() {
         fetch(`/.netlify/functions/ticker-lookup?ticker=${this.ticker}`)
             .then(result => result.json())
-            .then((result: { financial_data: FinancialData }) => {
-                this.fetchedData = result.financial_data;
-                // console.log(result)
-
+            .then(({data}) => {
+                this.financialStatements = data.financial_statements.map(x => {
+                    return new FinancialStatement(x.name, x.items)
+                });
             });
-        // this.fetchedData = (await resp.json()).data;
     }
 
+    get tabHeadings() {
+        return ['Dave Forms', ...this.financialStatements.map(s => s.name)];
+    }
+
+    statement(name): FinancialStatement {
+        for (const s of this.financialStatements) {
+            if (name === s.name) {
+                return s;
+            }
+        }
+        return null;
+    }
 
     get roicColumns() {
-        if (!this.fetchedData) {
+        if (this.financialStatements.length < 2) {
             return [];
         }
-        const ebit = parseFloat(String(this.fetchedData.income_statement.ebit.values[0].value));
-        const taxes = parseFloat(String(this.fetchedData.income_statement.income_taxes.values[0].value));
-        const equity = parseFloat(String(this.fetchedData.balance_sheet.share_holder_equity.values[0].value));
-        const debt = parseFloat(String(this.fetchedData.balance_sheet.long_term_debt.values[0].value));
+
+        const incomeStatement = this.statement('Income Statement');
+        const balanceSheet = this.statement('Balance Sheet');
+
+        const ebit = parseFloat(String(incomeStatement.item('EBIT').value));
+        const taxes = parseFloat(String(incomeStatement.item('Income Taxes').value));
+        const equity = parseFloat(String(balanceSheet.item('Share Holder Equity').value));
+        const debt = parseFloat(String(balanceSheet.item('Long Term Debt').value));
         const roic = ((ebit - taxes) / (equity + debt) * 100).toFixed(2) + '%';
 
         return [
@@ -228,7 +226,9 @@ export default class App extends Vue {
     }
 
     mounted() {
-        // this.fetchInfo();
+        // console.clear();
+        this.fetchInfo();
     }
 }
+
 </script>
