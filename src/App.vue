@@ -162,7 +162,7 @@ class DaveForm {
         this.financials = financials;
     }
 
-    rows(): Array {
+    rows(): any[][] {
         return [];
     }
 }
@@ -170,7 +170,7 @@ class DaveForm {
 class ROICForm extends DaveForm {
     name = 'ROIC';
 
-    rows(): Array {
+    rows(): any[][] {
 
         const incomeStatement = this.financials.statement('Income Statement');
         const balanceSheet = this.financials.statement('Balance Sheet');
@@ -249,15 +249,6 @@ export default class App extends Vue {
 
     get tabHeadings() {
         return ['Dave Forms', ...this.financialStatements.items.map(s => s.name)];
-    }
-
-    statement(name): FinancialStatement {
-        for (const s of this.financialStatements) {
-            if (name === s.name) {
-                return s;
-            }
-        }
-        return null;
     }
 
     // mounted() {
