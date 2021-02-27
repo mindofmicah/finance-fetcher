@@ -21,17 +21,17 @@
                                     <v-simple-table>
                                         <template v-slot:default>
                                             <thead>
-                                                <tr>
-                                                    <th v-for="heading in form.headings" :key="heading">{{
-                                                            heading
-                                                        }}
-                                                    </th>
-                                                </tr>
+                                            <tr>
+                                                <th v-for="heading in form.headings" :key="heading">{{
+                                                        heading
+                                                    }}
+                                                </th>
+                                            </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(cells, i) in form.rows()" :key="i">
-                                                    <td v-for="(cell, ii) in cells" :key="ii">{{ cell }}</td>
-                                                </tr>
+                                            <tr v-for="(cells, i) in form.rows()" :key="i">
+                                                <td v-for="(cell, ii) in cells" :key="ii">{{ cell }}</td>
+                                            </tr>
                                             </tbody>
                                         </template>
                                     </v-simple-table>
@@ -47,16 +47,16 @@
                                     <v-simple-table>
                                         <template v-slot:default>
                                             <thead>
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Value</th>
-                                                </tr>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Value</th>
+                                            </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(value,index) in property.values" :key="index">
-                                                    <td>{{ value.date }}</td>
-                                                    <td>{{ value.value }}</td>
-                                                </tr>
+                                            <tr v-for="(value,index) in property.values" :key="index">
+                                                <td>{{ value.date }}</td>
+                                                <td>{{ value.value }}</td>
+                                            </tr>
                                             </tbody>
                                         </template>
                                     </v-simple-table>
@@ -71,201 +71,14 @@
 </template>
 
 <script lang="ts">
-
-type FinancialValue = {
-    date: string;
-    value: number;
-};
-
-type FinancialProperty = {
-    label: string;
-    position: number;
-    values: FinancialValue[];
-};
-type IncomeStatement = {
-    revenue: FinancialProperty;
-    cost_of_goods_sold: FinancialProperty;
-    gross_profit: FinancialProperty;
-    research_and_development_expenses: FinancialProperty;
-    sganda_expenses: FinancialProperty;
-    other_operating_income_or_expenses: FinancialProperty;
-    operating_expenses: FinancialProperty;
-    operating_income: FinancialProperty;
-    total_non_operating_incomeexpense: FinancialProperty;
-    pre_tax_income: FinancialProperty;
-    income_taxes: FinancialProperty;
-    income_after_taxes: FinancialProperty;
-    other_income: FinancialProperty;
-    income_from_continuous_operations: FinancialProperty;
-    income_from_discontinued_operations: FinancialProperty;
-    net_income: FinancialProperty;
-    ebitda: FinancialProperty;
-    ebit: FinancialProperty;
-    basic_shares_outstanding: FinancialProperty;
-    shares_outstanding: FinancialProperty;
-    basic_eps: FinancialProperty;
-    eps___earnings_per_share: FinancialProperty;
-};
-type BalanceSheet = {
-
-    cash_on_hand: FinancialProperty;
-    receivables: FinancialProperty;
-    inventory: FinancialProperty;
-    pre_paid_expenses: FinancialProperty;
-    other_current_assets: FinancialProperty;
-    total_current_assets: FinancialProperty;
-    property_plant_and_equipment: FinancialProperty;
-    long_term_investments: FinancialProperty;
-    goodwill_and_intangible_assets: FinancialProperty;
-    other_long_term_assets: FinancialProperty;
-    total_long_term_assets: FinancialProperty;
-    total_assets: FinancialProperty;
-    total_current_liabilities: FinancialProperty;
-    long_term_debt: FinancialProperty;
-    other_non_current_liabilities: FinancialProperty;
-    total_long_term_liabilities: FinancialProperty;
-    total_liabilities: FinancialProperty;
-    common_stock_net: FinancialProperty;
-    // retained_earnings_(accumulated_deficit): FinancialProperty;
-    comprehensive_income: FinancialProperty;
-    other_share_holders_equity: FinancialProperty;
-    share_holder_equity: FinancialProperty;
-    total_liabilities_and_share_holders_equity: FinancialProperty;
-
-};
-
-type FinancialStatementItem = {
-    name: string;
-    values: FinancialValue[];
-}
-
-class FinancialStatement {
-    items: FinancialStatementItem[];
-    name: string;
-
-    constructor(name, items) {
-        this.name = name;
-        this.items = items;
-    }
-
-    item(name: string, index = 0): FinancialValue {
-        for (const item of this.items) {
-            if (item.name === name) {
-                return item.values[index];
-            }
-        }
-    }
-}
-
-class DaveForm {
-    _headings = ['Property', 'Value'];
-    financials: FinancialStatementCollection;
-
-    constructor(financials: FinancialStatementCollection) {
-        this.financials = financials;
-    }
-
-    get headings() {
-        return this._headings;
-    }
-
-    rows(): any[][] {
-        return [];
-    }
-}
-
-import {RATE} from '@formulajs/formulajs';
-
-class RateOfReturnForm extends DaveForm {
-    statement = '';
-    value = '';
-    heading = null;
-    extraYears = [1, 3, 5, 10]
-
-    get headings() {
-        return ['Time Period', this.heading ?? this.value, 'Rate of Return']
-    }
-
-    rows(): any[][] {
-
-        const statement1 = this.financials.statement(this.statement);
-        const recent = statement1.item(this.value).value;
-        const others = this.extraYears;
-        return [
-            ['Recent', recent, ''],
-            ...others.map((index) => {
-                const value = statement1.item(this.value, index).value
-                return [
-                    `${index} year(s) ago`,
-                    value,
-                    `${(100 * RATE(index, 0, -1 * value, recent)).toFixed(2)}%`
-                ]
-            })
-        ];
-    }
-
-}
-class EPSForm extends RateOfReturnForm{
-    name = 'EPS Growth Rate';
-    statement = 'Income Statement';
-    value = 'EPS - Earnings Per Share';
-    heading = 'EPS';
-}
-class EquityForm extends RateOfReturnForm {
-    name = 'Equity';
-    statement = 'Balance Sheet';
-    value = 'Share Holder Equity';
-    heading = 'Equity';
-}
-class RevenueForm extends RateOfReturnForm {
-    name = 'Revenue Growth Rate';
-    statement = 'Income Statement';
-    value = 'Revenue';
-}
-
-class ROICForm extends DaveForm {
-    name = 'ROIC';
-
-    rows(): any[][] {
-
-        const incomeStatement = this.financials.statement('Income Statement');
-        const balanceSheet = this.financials.statement('Balance Sheet');
-
-        const ebit = parseFloat(String(incomeStatement.item('EBIT').value));
-        const taxes = parseFloat(String(incomeStatement.item('Income Taxes').value));
-        const equity = parseFloat(String(balanceSheet.item('Share Holder Equity').value));
-        const debt = parseFloat(String(balanceSheet.item('Long Term Debt').value));
-        const roic = ((ebit - taxes) / (equity + debt) * 100).toFixed(2) + '%';
-
-        return [
-            ['EBIT', ebit],
-            ['Taxes', taxes],
-            ['Equity', equity],
-            ['Debt', debt],
-            ['ROIC', roic],
-
-        ]
-    }
-}
-
-class FinancialStatementCollection {
-    items: FinancialStatement[];
-
-    constructor(items: FinancialStatement[] = []) {
-        this.items = items;
-    }
-
-    statement(name): FinancialStatement {
-        for (const s of this.items) {
-            if (name === s.name) {
-                return s;
-            }
-        }
-        return null;
-    }
-}
-
+import {DaveForm} from "@/classes/Forms/DaveForm";
+import {FinancialStatementCollection} from "@/classes/FinancialStatementCollection";
+import {FinancialStatement} from "@/classes/FinancialStatement";
 import {Component, Vue} from 'vue-property-decorator';
+import {ROICForm} from "@/classes/Forms/ROICForm";
+import {RevenueForm} from "@/classes/Forms/RevenueForm";
+import {EPSForm} from "@/classes/Forms/EPSForm";
+import {EquityForm} from "@/classes/Forms/EquityForm";
 
 @Component({
     components: {},
@@ -310,10 +123,10 @@ export default class App extends Vue {
         return ['Dave Forms', ...this.financialStatements.items.map(s => s.name)];
     }
 
-    // mounted() {
+    mounted() {
         // console.clear();
         // this.fetchInfo();
-    // }
+    }
 }
 
 </script>
