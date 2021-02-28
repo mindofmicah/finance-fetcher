@@ -11,21 +11,33 @@ export class RateOfReturnForm extends DaveForm {
         return ['Time Period', this.heading ?? this.value, 'Rate of Return']
     }
 
-    rows(): any[][] {
+    calculateRateValues(callback: (index: number) => number[]) {
+        const firstRow = callback(0);
+        const recentValue = firstRow[firstRow.length - 1];
 
-        const statement1 = this.financials.statement(this.statement);
-        const recent = statement1.item(this.value).value;
-        const others = this.extraYears;
         return [
-            ['Recent', recent, ''],
-            ...others.map((index) => {
-                const value = statement1.item(this.value, index).value
+            ['Recent', ...firstRow, ''],
+            ...this.extraYears.map((index) => {
+                const values = callback(index);
                 return [
                     `${index} year(s) ago`,
-                    value,
-                    `${(100 * RATE(index, 0, -1 * value, recent)).toFixed(2)}%`
-                ]
+                    ...values,
+                    `${(100 * this.calculateRate(recentValue, values[values.length - 1], index)).toFixed(2)}%`
+                ];
             })
         ];
+    }
+
+    calculateRate(current: number, previous: number, numYears: number): number {
+        return RATE(numYears, 0, -1 * previous, current);
+    }
+
+    rows(): any[][] {
+        return this.calculateRateValues((index: number) => {
+            const statement = this.financials.statement(this.statement);
+            return [
+                statement.item(this.value, index).value
+            ];
+        });
     }
 }
