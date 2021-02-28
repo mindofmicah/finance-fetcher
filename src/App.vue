@@ -75,10 +75,8 @@ import {DaveForm} from "@/classes/Forms/DaveForm";
 import {FinancialStatementCollection} from "@/classes/FinancialStatementCollection";
 import {FinancialStatement} from "@/classes/FinancialStatement";
 import {Component, Vue} from 'vue-property-decorator';
-import {ROICForm} from "@/classes/Forms/ROICForm";
-import {RevenueForm} from "@/classes/Forms/RevenueForm";
-import {EPSForm} from "@/classes/Forms/EPSForm";
-import {EquityForm} from "@/classes/Forms/EquityForm";
+import {ActiveForms} from "@/classes/Forms";
+
 
 @Component({
     components: {},
@@ -102,11 +100,9 @@ export default class App extends Vue {
         this.ticker = 'nflx';
         this.financialStatements = new FinancialStatementCollection;
 
-        this.forms = [];
-        this.forms.push(new ROICForm(this.financialStatements));
-        this.forms.push(new RevenueForm(this.financialStatements));
-        this.forms.push(new EPSForm(this.financialStatements));
-        this.forms.push(new EquityForm(this.financialStatements));
+        this.forms = ActiveForms.map(className => {
+            return new className(this.financialStatements);
+        });
     }
 
     fetchInfo() {
